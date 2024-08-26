@@ -26,21 +26,33 @@ class WallpaperChangerApp:
         self.night_time = "18:00"
 
         self.current_wallpaper = None
+
+        # Create a frame for the main content
+        self.content_frame = tk.Frame(root)
+        self.content_frame.pack(fill=tk.BOTH, expand=True)
+
+        tk.Button(self.content_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
+        tk.Button(self.content_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=10)
         
-        tk.Button(root, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
-        tk.Button(root, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=10)
-        
-        tk.Label(root, text="Day wallpaper change time (HH:MM):").pack()
-        self.day_time_entry = tk.Entry(root)
+        tk.Label(self.content_frame, text="Day wallpaper change time (HH:MM):").pack()
+        self.day_time_entry = tk.Entry(self.content_frame)
         self.day_time_entry.insert(0, self.day_time)
         self.day_time_entry.pack(pady=5)
         
-        tk.Label(root, text="Night wallpaper change time (HH:MM):").pack()
-        self.night_time_entry = tk.Entry(root)
+        tk.Label(self.content_frame, text="Night wallpaper change time (HH:MM):").pack()
+        self.night_time_entry = tk.Entry(self.content_frame)
         self.night_time_entry.insert(0, self.night_time)
         self.night_time_entry.pack(pady=5)
         
-        tk.Button(root, text="Save Settings", command=self.save_settings).pack(pady=10)
+        tk.Button(self.content_frame, text="Save Settings", command=self.save_settings).pack(pady=10)
+
+        # Create a footer frame
+        self.footer_frame = tk.Frame(root, pady=10)
+        self.footer_frame.pack(side=tk.BOTTOM, fill=tk.X)
+
+        # Add a footer label
+        self.footer_label = tk.Label(self.footer_frame, text="Version 1.0.0 | Created by staFF6773", anchor=tk.CENTER)
+        self.footer_label.pack()
 
         self.load_settings()
 
