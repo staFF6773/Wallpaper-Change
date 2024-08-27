@@ -14,7 +14,7 @@ class WallpaperChangerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Wallpaper Changer")
-        self.root.geometry("500x450")
+        self.root.geometry("500x460")
         self.root.configure(bg="#f0f0f0")  # Background color
 
         # Prevent resizing and maximize
@@ -46,6 +46,11 @@ class WallpaperChangerApp:
         self.header_photo = ImageTk.PhotoImage(self.header_image)
         self.header_label = ttk.Label(self.content_frame, image=self.header_photo, text="  Wallpaper Changer", compound=tk.LEFT, font=("Helvetica", 16, "bold"))
         self.header_label.pack(pady=10)
+
+        # Display current time
+        self.time_label = ttk.Label(self.content_frame, text="", font=("Helvetica", 12, "bold"))
+        self.time_label.pack(pady=5)
+        self.update_time()
 
         # Buttons and Settings
         ttk.Button(self.content_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
@@ -80,6 +85,12 @@ class WallpaperChangerApp:
         self.thread.start()
 
         self.create_tray_icon()
+
+    def update_time(self):
+        current_time = datetime.now().strftime("%H:%M:%S")
+        self.time_label.config(text=f"Current Time: {current_time}")
+        # Update the time every second
+        self.root.after(1000, self.update_time)
 
     def set_window_icon(self, icon_path):
         try:
@@ -291,7 +302,7 @@ if __name__ == "__main__":
     root.mainloop()
 
     # windows startup
-
+    
     app.add_to_startup()
     # app.remove_from_startup()
     # app.delete_startup_key()
