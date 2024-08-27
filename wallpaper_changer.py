@@ -19,7 +19,6 @@ class WallpaperChangerApp:
         # Prevent resizing and maximize
         self.root.resizable(False, False)
 
-        # Estilo de ttk
         self.style = ttk.Style()
         self.style.configure("TButton", font=("Helvetica", 10), padding=6)
         self.style.configure("TLabel", font=("Helvetica", 10), background="#f0f0f0")
@@ -38,11 +37,9 @@ class WallpaperChangerApp:
 
         self.current_wallpaper = None
 
-        # Frame principal para contenido
         self.content_frame = ttk.Frame(root, padding=(20, 10, 20, 0))  # Added top padding
         self.content_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Imagen de encabezado
         self.header_image = Image.open(self.window_icon_path)
         self.header_image = self.header_image.resize((50, 50), Image.LANCZOS)
         self.header_photo = ImageTk.PhotoImage(self.header_image)
