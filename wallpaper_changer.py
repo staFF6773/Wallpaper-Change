@@ -8,6 +8,7 @@ import threading
 from plyer import notification
 from PIL import Image, ImageTk
 import pystray
+import winreg
 
 class WallpaperChangerApp:
     def __init__(self, root):
@@ -128,12 +129,18 @@ class WallpaperChangerApp:
                     f.write(f"{key}:{value}\n")
             
             messagebox.showinfo("Settings Saved", "Settings saved successfully.")
+            
             # Update instance variables with new settings
             self.day_time = new_day_time
             self.night_time = new_night_time
             self.day_wallpaper = new_day_wallpaper
             self.night_wallpaper = new_night_wallpaper
             self.notify_on_change = self.notify_var.get()
+
+            if self.notify_on_change:
+                self.add_to_startup()
+            else:
+                self.remove_from_startup()
         else:
             messagebox.showerror("No Changes", "No changes detected. Please modify settings before saving.")
 
@@ -202,6 +209,31 @@ class WallpaperChangerApp:
                 print(f"Error changing wallpaper or showing notification: {e}")
         else:
             print(f"Invalid wallpaper path: {wallpaper_path}")
+
+    def add_to_startup(self):
+        try:
+            key = winreg.HKEY_CURRENT_USER
+            key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+            value_name = "WallpaperChangerApp"
+            executable_path = os.path.abspath(__file__)
+
+            with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as registry_key:
+                winreg.SetValueEx(registry_key, value_name, 0, winreg.REG_SZ, executable_path)
+            print("Application added to startup successfully.")
+        except Exception as e:
+            print(f"Error adding application to startup: {e}")
+
+    def remove_from_startup(self):
+        try:
+            key = winreg.HKEY_CURRENT_USER
+            key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+            value_name = "WallpaperChangerApp"
+
+            with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as registry_key:
+                winreg.DeleteValue(registry_key, value_name)
+            print("Application removed from startup successfully.")
+        except Exception as e:
+            print(f"Error removing application from startup: {e}")
 
     def stop(self):
         self.running = False
