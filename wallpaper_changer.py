@@ -217,9 +217,17 @@ class WallpaperChangerApp:
             value_name = "WallpaperChangerApp"
             executable_path = os.path.abspath(__file__)
 
-            with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as registry_key:
+            with winreg.OpenKey(key, key_path, 0, winreg.KEY_ALL_ACCESS) as registry_key:
+                try:
+                    existing_value, _ = winreg.QueryValueEx(registry_key, value_name)
+                    if existing_value == executable_path:
+                        print("Application is already in startup.")
+                        return
+                except FileNotFoundError:
+                    pass
+
                 winreg.SetValueEx(registry_key, value_name, 0, winreg.REG_SZ, executable_path)
-            print("Application added to startup successfully.")
+                print("Application added to startup successfully.")
         except Exception as e:
             print(f"Error adding application to startup: {e}")
 
@@ -229,11 +237,30 @@ class WallpaperChangerApp:
             key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
             value_name = "WallpaperChangerApp"
 
-            with winreg.OpenKey(key, key_path, 0, winreg.KEY_SET_VALUE) as registry_key:
-                winreg.DeleteValue(registry_key, value_name)
-            print("Application removed from startup successfully.")
+            with winreg.OpenKey(key, key_path, 0, winreg.KEY_ALL_ACCESS) as registry_key:
+                try:
+                    winreg.DeleteValue(registry_key, value_name)
+                    print("Application removed from startup successfully.")
+                except FileNotFoundError:
+                    print("Application is not in startup.")
         except Exception as e:
             print(f"Error removing application from startup: {e}")
+
+    def delete_startup_key(self):
+        try:
+            key = winreg.HKEY_CURRENT_USER
+            key_path = r"Software\Microsoft\Windows\CurrentVersion\Run"
+
+            with winreg.OpenKey(key, key_path, 0, winreg.KEY_ALL_ACCESS) as registry_key:
+                # Delete the entire key (if no other values are stored in it)
+                winreg.DeleteKey(registry_key, key_path)
+                print("Startup key deleted successfully.")
+        except FileNotFoundError:
+            print("Startup key does not exist.")
+        except OSError:
+            print("Unable to delete the startup key. It might contain other values or be protected.")
+        except Exception as e:
+            print(f"Error deleting startup key: {e}")
 
     def stop(self):
         self.running = False
@@ -262,3 +289,9 @@ if __name__ == "__main__":
     app = WallpaperChangerApp(root)
     root.protocol("WM_DELETE_WINDOW", app.minimize_to_tray)
     root.mainloop()
+
+    # windows startup
+
+    app.add_to_startup()
+    # app.remove_from_startup()
+    # app.delete_startup_key()
