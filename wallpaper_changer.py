@@ -5,6 +5,7 @@ import ctypes
 import os
 import time
 import threading
+import sv_ttk
 from plyer import notification
 from PIL import Image, ImageTk
 import pystray
@@ -15,18 +16,14 @@ class WallpaperChangerApp:
         self.root = root
         self.root.title("Wallpaper Changer")
         self.root.geometry("500x460")
-        self.root.configure(bg="#f0f0f0")  # Background color
+        self.root.configure(bg="#ffffff")
 
-        # Prevent resizing and maximize
         self.root.resizable(False, False)
 
-        self.style = ttk.Style()
-        self.style.configure("TButton", font=("Helvetica", 10), padding=6)
-        self.style.configure("TLabel", font=("Helvetica", 10), background="#f0f0f0")
-        self.style.configure("TFrame", background="#f0f0f0")
+        sv_ttk.set_theme("dark")
 
-        self.window_icon_path = os.path.join(os.path.dirname(__file__), 'data', 'img', '0497a1a7d154bd672e4fb7e1b6aabdff.png')  # Window icon
-        self.notification_icon_path = os.path.join(os.path.dirname(__file__), 'data', 'img', '0497a1a7d154bd672e4fb7e1b6aabdff.ico')  # Notification icon
+        self.window_icon_path = os.path.join(os.path.dirname(__file__), 'data', 'img', '0497a1a7d154bd672e4fb7e1b6aabdff.png')
+        self.notification_icon_path = os.path.join(os.path.dirname(__file__), 'data', 'img', '0497a1a7d154bd672e4fb7e1b6aabdff.ico')
         self.set_window_icon(self.window_icon_path)
 
         self.day_wallpaper = ""
@@ -38,43 +35,52 @@ class WallpaperChangerApp:
 
         self.current_wallpaper = None
 
-        self.content_frame = ttk.Frame(root, padding=(20, 10, 20, 0))  # Added top padding
-        self.content_frame.pack(fill=tk.BOTH, expand=True)
+        self.notebook = ttk.Notebook(root)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
 
+        self.main_frame = ttk.Frame(self.notebook, padding=(20, 10))
+        self.settings_frame = ttk.Frame(self.notebook, padding=(20, 10))
+
+        self.notebook.add(self.main_frame, text="Main")
+        self.notebook.add(self.settings_frame, text="Settings")
+
+        # Header image
         self.header_image = Image.open(self.window_icon_path)
-        self.header_image = self.header_image.resize((50, 50), Image.LANCZOS)
+        self.header_image = self.header_image.resize((60, 60), Image.LANCZOS)
         self.header_photo = ImageTk.PhotoImage(self.header_image)
-        self.header_label = ttk.Label(self.content_frame, image=self.header_photo, text="  Wallpaper Changer", compound=tk.LEFT, font=("Helvetica", 16, "bold"))
-        self.header_label.pack(pady=10)
+        self.header_label = ttk.Label(self.main_frame, image=self.header_photo, text="  Wallpaper Changer", compound=tk.LEFT, font=("Helvetica", 16, "bold"))
+        self.header_label.pack(pady=15)
 
-        # Display current time
-        self.time_label = ttk.Label(self.content_frame, text="", font=("Helvetica", 12, "bold"))
-        self.time_label.pack(pady=5)
+        # Display the current time
+        self.time_label = ttk.Label(self.main_frame, text="", font=("Helvetica", 12, "bold"))
+        self.time_label.pack(pady=10)  # More space around time
         self.update_time()
 
-        # Buttons and Settings
-        ttk.Button(self.content_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
-        ttk.Button(self.content_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=10)
+        # Buttons and settings
+        ttk.Button(self.main_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=15)  # Más espacio entre los botones
+        ttk.Button(self.main_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=15)
 
-        ttk.Label(self.content_frame, text="Day wallpaper change time (HH:MM):").pack()
-        self.day_time_entry = ttk.Entry(self.content_frame)
+        # Settings in the “Settings” tab
+        ttk.Label(self.settings_frame, text="Day wallpaper change time (HH:MM):").pack(pady=5)
+        self.day_time_entry = ttk.Entry(self.settings_frame)
         self.day_time_entry.insert(0, self.day_time)
-        self.day_time_entry.pack(pady=5)
+        self.day_time_entry.pack(pady=10)
 
-        ttk.Label(self.content_frame, text="Night wallpaper change time (HH:MM):").pack()
-        self.night_time_entry = ttk.Entry(self.content_frame)
+        ttk.Label(self.settings_frame, text="Night wallpaper change time (HH:MM):").pack(pady=5)
+        self.night_time_entry = ttk.Entry(self.settings_frame)
         self.night_time_entry.insert(0, self.night_time)
-        self.night_time_entry.pack(pady=5)
+        self.night_time_entry.pack(pady=10)
 
         self.notify_var = tk.BooleanVar(value=self.notify_on_change)
-        ttk.Checkbutton(self.content_frame, text="Enable Notifications", variable=self.notify_var).pack(pady=5)
+        ttk.Checkbutton(self.settings_frame, text="Enable Notifications", variable=self.notify_var).pack(pady=10)
 
-        ttk.Button(self.content_frame, text="Save Settings", command=self.save_settings).pack(pady=10)
+        ttk.Button(self.settings_frame, text="Save Settings", command=self.save_settings).pack(pady=15)
 
+        # Footer
         self.footer_frame = ttk.Frame(root, padding=10, style="TFrame")
         self.footer_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
-        self.footer_label = ttk.Label(self.footer_frame, text="Version 1.1.0 | Created by staFF6773", anchor=tk.CENTER)
+        self.footer_label = ttk.Label(self.footer_frame, text="Version 1.1.0 | Created by staFF6773", anchor=tk.CENTER, font=("Helvetica", 9, "italic"))
         self.footer_label.pack()
 
         self.load_settings()
@@ -302,7 +308,7 @@ if __name__ == "__main__":
     root.mainloop()
 
     # windows startup
-    
+
     app.add_to_startup()
     # app.remove_from_startup()
     # app.delete_startup_key()
