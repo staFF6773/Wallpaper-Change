@@ -1,19 +1,29 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import ttk, filedialog, messagebox
 from datetime import datetime
 import ctypes
 import os
 import time
 import threading
 from plyer import notification
-from PIL import Image
+from PIL import Image, ImageTk
 import pystray
 
 class WallpaperChangerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Wallpaper Changer")
-        self.root.geometry("400x300")
+        self.root.geometry("500x400")
+        self.root.configure(bg="#f0f0f0")  # Background color
+
+        # Prevent resizing and maximize
+        self.root.resizable(False, False)
+
+        # Estilo de ttk
+        self.style = ttk.Style()
+        self.style.configure("TButton", font=("Helvetica", 10), padding=6)
+        self.style.configure("TLabel", font=("Helvetica", 10), background="#f0f0f0")
+        self.style.configure("TFrame", background="#f0f0f0")
 
         self.window_icon_path = os.path.join(os.path.dirname(__file__), 'data', 'img', '0497a1a7d154bd672e4fb7e1b6aabdff.png')  # Window icon
         self.notification_icon_path = os.path.join(os.path.dirname(__file__), 'data', 'img', '0497a1a7d154bd672e4fb7e1b6aabdff.ico')  # Notification icon
@@ -27,31 +37,36 @@ class WallpaperChangerApp:
 
         self.current_wallpaper = None
 
-        # Create a frame for the main content
-        self.content_frame = tk.Frame(root)
+        # Frame principal para contenido
+        self.content_frame = ttk.Frame(root, padding=(20, 10, 20, 0))  # Added top padding
         self.content_frame.pack(fill=tk.BOTH, expand=True)
 
-        tk.Button(self.content_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
-        tk.Button(self.content_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=10)
+        # Imagen de encabezado
+        self.header_image = Image.open(self.window_icon_path)
+        self.header_image = self.header_image.resize((50, 50), Image.LANCZOS)
+        self.header_photo = ImageTk.PhotoImage(self.header_image)
+        self.header_label = ttk.Label(self.content_frame, image=self.header_photo, text="  Wallpaper Changer", compound=tk.LEFT, font=("Helvetica", 16, "bold"))
+        self.header_label.pack(pady=10)
+
+        ttk.Button(self.content_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
+        ttk.Button(self.content_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=10)
         
-        tk.Label(self.content_frame, text="Day wallpaper change time (HH:MM):").pack()
-        self.day_time_entry = tk.Entry(self.content_frame)
+        ttk.Label(self.content_frame, text="Day wallpaper change time (HH:MM):").pack()
+        self.day_time_entry = ttk.Entry(self.content_frame)
         self.day_time_entry.insert(0, self.day_time)
         self.day_time_entry.pack(pady=5)
         
-        tk.Label(self.content_frame, text="Night wallpaper change time (HH:MM):").pack()
-        self.night_time_entry = tk.Entry(self.content_frame)
+        ttk.Label(self.content_frame, text="Night wallpaper change time (HH:MM):").pack()
+        self.night_time_entry = ttk.Entry(self.content_frame)
         self.night_time_entry.insert(0, self.night_time)
         self.night_time_entry.pack(pady=5)
         
-        tk.Button(self.content_frame, text="Save Settings", command=self.save_settings).pack(pady=10)
+        ttk.Button(self.content_frame, text="Save Settings", command=self.save_settings).pack(pady=10)
 
-        # Create a footer frame
-        self.footer_frame = tk.Frame(root, pady=10)
+        self.footer_frame = ttk.Frame(root, padding=10, style="TFrame")
         self.footer_frame.pack(side=tk.BOTTOM, fill=tk.X)
 
-        # Add a footer label
-        self.footer_label = tk.Label(self.footer_frame, text="Version 1.0.0 | Created by staFF6773", anchor=tk.CENTER)
+        self.footer_label = ttk.Label(self.footer_frame, text="Version 1.1.0 | Created by staFF6773", anchor=tk.CENTER)
         self.footer_label.pack()
 
         self.load_settings()
@@ -78,22 +93,45 @@ class WallpaperChangerApp:
         self.night_wallpaper = filedialog.askopenfilename(title="Select Night Wallpaper")
     
     def save_settings(self):
-        self.day_time = self.day_time_entry.get()
-        self.night_time = self.night_time_entry.get()
-        
-        settings = {
-            "day_wallpaper": self.day_wallpaper,
-            "night_wallpaper": self.night_wallpaper,
-            "day_time": self.day_time,
-            "night_time": self.night_time
-        }
-        
-        with open("settings.txt", "w") as f:
-            for key, value in settings.items():
-                f.write(f"{key}:{value}\n")
-        
-        messagebox.showinfo("Settings Saved", "Settings saved successfully.")
-    
+        new_day_time = self.day_time_entry.get()
+        new_night_time = self.night_time_entry.get()
+        new_day_wallpaper = self.day_wallpaper
+        new_night_wallpaper = self.night_wallpaper
+
+        # Validate time format
+        try:
+            datetime.strptime(new_day_time, "%H:%M")
+            datetime.strptime(new_night_time, "%H:%M")
+        except ValueError:
+            messagebox.showerror("Invalid Time Format", "Please enter valid time in HH:MM format.")
+            return
+
+        # Check if there are changes
+        if (self.day_time != new_day_time or
+            self.night_time != new_night_time or
+            self.day_wallpaper != new_day_wallpaper or
+            self.night_wallpaper != new_night_wallpaper):
+            
+            settings = {
+                "day_wallpaper": new_day_wallpaper,
+                "night_wallpaper": new_night_wallpaper,
+                "day_time": new_day_time,
+                "night_time": new_night_time
+            }
+
+            with open("settings.txt", "w") as f:
+                for key, value in settings.items():
+                    f.write(f"{key}:{value}\n")
+            
+            messagebox.showinfo("Settings Saved", "Settings saved successfully.")
+            # Update instance variables with new settings
+            self.day_time = new_day_time
+            self.night_time = new_night_time
+            self.day_wallpaper = new_day_wallpaper
+            self.night_wallpaper = new_night_wallpaper
+        else:
+            messagebox.showerror("No Changes", "No changes detected. Please modify settings before saving.")
+
     def load_settings(self):
         if os.path.exists("settings.txt"):
             with open("settings.txt", "r") as f:
@@ -139,23 +177,22 @@ class WallpaperChangerApp:
     
     def change_wallpaper(self, wallpaper_path):
         if wallpaper_path and os.path.exists(wallpaper_path) and wallpaper_path != self.current_wallpaper:
-            ctypes.windll.user32.SystemParametersInfoW(20, 0, wallpaper_path, 0x01 | 0x02)
             try:
-                if os.path.exists(self.notification_icon_path):
-                    app_icon = self.notification_icon_path
-                else:
-                    app_icon = None
-                    print("Icon file not found, using default icon.")
-
+                ctypes.windll.user32.SystemParametersInfoW(20, 0, wallpaper_path, 0x01 | 0x02)
+                app_icon = self.notification_icon_path if os.path.exists(self.notification_icon_path) else None
+                
                 notification.notify(
                     title="Wallpaper Change",
                     message=f"The wallpaper has been changed to: {os.path.basename(wallpaper_path)}",
                     timeout=5,
                     app_icon=app_icon
                 )
+                self.current_wallpaper = wallpaper_path
             except Exception as e:
-                print(f"Error showing notification: {e}")
-            self.current_wallpaper = wallpaper_path
+                print(f"Error changing wallpaper or showing notification: {e}")
+        else:
+            print(f"Invalid wallpaper path: {wallpaper_path}")
+
     
     def stop(self):
         self.running = False
