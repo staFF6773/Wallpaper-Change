@@ -13,7 +13,7 @@ class WallpaperChangerApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Wallpaper Changer")
-        self.root.geometry("500x400")
+        self.root.geometry("500x450")
         self.root.configure(bg="#f0f0f0")  # Background color
 
         # Prevent resizing and maximize
@@ -34,6 +34,7 @@ class WallpaperChangerApp:
         
         self.day_time = "06:00"
         self.night_time = "18:00"
+        self.notify_on_change = True
 
         self.current_wallpaper = None
 
@@ -48,19 +49,23 @@ class WallpaperChangerApp:
         self.header_label = ttk.Label(self.content_frame, image=self.header_photo, text="  Wallpaper Changer", compound=tk.LEFT, font=("Helvetica", 16, "bold"))
         self.header_label.pack(pady=10)
 
+        # Buttons and Settings
         ttk.Button(self.content_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=10)
         ttk.Button(self.content_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=10)
-        
+
         ttk.Label(self.content_frame, text="Day wallpaper change time (HH:MM):").pack()
         self.day_time_entry = ttk.Entry(self.content_frame)
         self.day_time_entry.insert(0, self.day_time)
         self.day_time_entry.pack(pady=5)
-        
+
         ttk.Label(self.content_frame, text="Night wallpaper change time (HH:MM):").pack()
         self.night_time_entry = ttk.Entry(self.content_frame)
         self.night_time_entry.insert(0, self.night_time)
         self.night_time_entry.pack(pady=5)
-        
+
+        self.notify_var = tk.BooleanVar(value=self.notify_on_change)
+        ttk.Checkbutton(self.content_frame, text="Enable Notifications", variable=self.notify_var).pack(pady=5)
+
         ttk.Button(self.content_frame, text="Save Settings", command=self.save_settings).pack(pady=10)
 
         self.footer_frame = ttk.Frame(root, padding=10, style="TFrame")
@@ -70,7 +75,6 @@ class WallpaperChangerApp:
         self.footer_label.pack()
 
         self.load_settings()
-
         self.apply_initial_wallpaper()
 
         self.running = True
@@ -88,15 +92,16 @@ class WallpaperChangerApp:
 
     def select_day_wallpaper(self):
         self.day_wallpaper = filedialog.askopenfilename(title="Select Day Wallpaper")
-    
+
     def select_night_wallpaper(self):
         self.night_wallpaper = filedialog.askopenfilename(title="Select Night Wallpaper")
-    
+
     def save_settings(self):
         new_day_time = self.day_time_entry.get()
         new_night_time = self.night_time_entry.get()
         new_day_wallpaper = self.day_wallpaper
         new_night_wallpaper = self.night_wallpaper
+        self.notify_on_change = self.notify_var.get()
 
         # Validate time format
         try:
@@ -110,13 +115,15 @@ class WallpaperChangerApp:
         if (self.day_time != new_day_time or
             self.night_time != new_night_time or
             self.day_wallpaper != new_day_wallpaper or
-            self.night_wallpaper != new_night_wallpaper):
+            self.night_wallpaper != new_night_wallpaper or
+            self.notify_on_change != self.notify_var.get()):
             
             settings = {
                 "day_wallpaper": new_day_wallpaper,
                 "night_wallpaper": new_night_wallpaper,
                 "day_time": new_day_time,
-                "night_time": new_night_time
+                "night_time": new_night_time,
+                "notify_on_change": str(self.notify_on_change)
             }
 
             with open("settings.txt", "w") as f:
@@ -129,6 +136,7 @@ class WallpaperChangerApp:
             self.night_time = new_night_time
             self.day_wallpaper = new_day_wallpaper
             self.night_wallpaper = new_night_wallpaper
+            self.notify_on_change = self.notify_var.get()
         else:
             messagebox.showerror("No Changes", "No changes detected. Please modify settings before saving.")
 
@@ -149,6 +157,9 @@ class WallpaperChangerApp:
                         elif key == "night_time":
                             self.night_time_entry.delete(0, tk.END)
                             self.night_time_entry.insert(0, value)
+                        elif key == "notify_on_change":
+                            self.notify_on_change = value.lower() in ['true', '1']
+                            self.notify_var.set(self.notify_on_change)
 
     def apply_initial_wallpaper(self):
         current_time = datetime.now().strftime("%H:%M")
@@ -174,26 +185,27 @@ class WallpaperChangerApp:
                 self.change_wallpaper(self.night_wallpaper)
 
             time.sleep(60)
-    
+
     def change_wallpaper(self, wallpaper_path):
         if wallpaper_path and os.path.exists(wallpaper_path) and wallpaper_path != self.current_wallpaper:
             try:
                 ctypes.windll.user32.SystemParametersInfoW(20, 0, wallpaper_path, 0x01 | 0x02)
-                app_icon = self.notification_icon_path if os.path.exists(self.notification_icon_path) else None
                 
-                notification.notify(
-                    title="Wallpaper Change",
-                    message=f"The wallpaper has been changed to: {os.path.basename(wallpaper_path)}",
-                    timeout=5,
-                    app_icon=app_icon
-                )
+                if self.notify_on_change:
+                    app_icon = self.notification_icon_path if os.path.exists(self.notification_icon_path) else None
+                    
+                    notification.notify(
+                        title="Wallpaper Change",
+                        message=f"The wallpaper has been changed to: {os.path.basename(wallpaper_path)}",
+                        timeout=5,
+                        app_icon=app_icon
+                    )
                 self.current_wallpaper = wallpaper_path
             except Exception as e:
                 print(f"Error changing wallpaper or showing notification: {e}")
         else:
             print(f"Invalid wallpaper path: {wallpaper_path}")
 
-    
     def stop(self):
         self.running = False
         self.icon.stop()
