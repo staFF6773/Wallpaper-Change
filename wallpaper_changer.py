@@ -1,15 +1,16 @@
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-from datetime import datetime
 import ctypes
 import os
 import time
 import threading
 import sv_ttk
-from plyer import notification
-from PIL import Image, ImageTk
 import pystray
 import winreg
+from plyer import notification
+from PIL import Image, ImageTk
+from tkinter import ttk, filedialog, messagebox
+from datetime import datetime
+from custom.custom_messagebox import show_custom_messagebox
 
 class WallpaperChangerApp:
     def __init__(self, root):
@@ -57,8 +58,14 @@ class WallpaperChangerApp:
         self.update_time()
 
         # Buttons and settings
-        ttk.Button(self.main_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=15)  # Más espacio entre los botones
+        ttk.Button(self.main_frame, text="Select Day Wallpaper", command=self.select_day_wallpaper).pack(pady=15)
         ttk.Button(self.main_frame, text="Select Night Wallpaper", command=self.select_night_wallpaper).pack(pady=15)
+
+        # Labels to show selected wallpaper paths
+        self.day_wallpaper_label = ttk.Label(self.main_frame, text="Day Wallpaper: Not selected", wraplength=400)
+        self.day_wallpaper_label.pack(pady=5)
+        self.night_wallpaper_label = ttk.Label(self.main_frame, text="Night Wallpaper: Not selected", wraplength=400)
+        self.night_wallpaper_label.pack(pady=5)
 
         # Settings in the “Settings” tab
         ttk.Label(self.settings_frame, text="Day wallpaper change time (HH:MM):").pack(pady=5)
@@ -95,7 +102,6 @@ class WallpaperChangerApp:
     def update_time(self):
         current_time = datetime.now().strftime("%H:%M:%S")
         self.time_label.config(text=f"Current Time: {current_time}")
-        # Update the time every second
         self.root.after(1000, self.update_time)
 
     def set_window_icon(self, icon_path):
@@ -107,9 +113,13 @@ class WallpaperChangerApp:
 
     def select_day_wallpaper(self):
         self.day_wallpaper = filedialog.askopenfilename(title="Select Day Wallpaper")
+        if self.day_wallpaper:
+            self.day_wallpaper_label.config(text=f"Day Wallpaper: {self.day_wallpaper}")
 
     def select_night_wallpaper(self):
         self.night_wallpaper = filedialog.askopenfilename(title="Select Night Wallpaper")
+        if self.night_wallpaper:
+            self.night_wallpaper_label.config(text=f"Night Wallpaper: {self.night_wallpaper}")
 
     def save_settings(self):
         new_day_time = self.day_time_entry.get()
@@ -123,7 +133,7 @@ class WallpaperChangerApp:
             datetime.strptime(new_day_time, "%H:%M")
             datetime.strptime(new_night_time, "%H:%M")
         except ValueError:
-            messagebox.showerror("Invalid Time Format", "Please enter valid time in HH:MM format.")
+            show_custom_messagebox(self.root, "Invalid Time Format", "Please enter valid time in HH:MM format.")
             return
 
         # Check if there are changes
@@ -145,7 +155,7 @@ class WallpaperChangerApp:
                 for key, value in settings.items():
                     f.write(f"{key}:{value}\n")
             
-            messagebox.showinfo("Settings Saved", "Settings saved successfully.")
+            show_custom_messagebox(self.root, "Settings Saved", "Settings saved successfully.")
             
             # Update instance variables with new settings
             self.day_time = new_day_time
@@ -159,7 +169,7 @@ class WallpaperChangerApp:
             else:
                 self.remove_from_startup()
         else:
-            messagebox.showerror("No Changes", "No changes detected. Please modify settings before saving.")
+            show_custom_messagebox(self.root, "No Changes", "No changes detected. Please modify settings before saving.")
 
     def load_settings(self):
         if os.path.exists("settings.txt"):
@@ -310,5 +320,5 @@ if __name__ == "__main__":
     # windows startup
 
     app.add_to_startup()
-    # app.remove_from_startup()
-    # app.delete_startup_key()
+    #app.remove_from_startup()
+    #app.delete_startup_key()
